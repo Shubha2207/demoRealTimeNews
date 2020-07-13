@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>Real Time Events</title>
+		<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+		
+	</head>
+
+	<style>
+		.navbar{
+			min-height: 80px;
+		}
+		.navbar-brand{
+			margin: auto;
+			font-size: 1.2rem;
+		}
+		.panel{
+			padding-top: 20px;
+			padding-bottom: 20px; 
+			background-color: red;
+			border-radius: 8px;
+			color: white;
+			width: 50%;
+			margin: auto;
+		}
+		.panel:hover{
+			background-color: white;
+			color: red;
+			border: 2px solid red;
+			border-radius: 8px;
+		}
+		h3{
+			color: blue;
+		}
+		.pstyle{
+			font-size: 1.2rem;
+			font-family: verdana, sans-serif;
+		}
+		article{
+			padding: 15px;
+			border: 1px solid gray;
+			border-radius: 5px;
+			margin-bottom: 10px;
+			box-shadow: 5px 10px 10px gray;
+		}
+	</style>
+
+
+	<script>
+
+		$(document).ready(function(){
+
+			var UserID = Math.floor((Math.random()*1000)+1);
+			$("#userspan").text(UserID);
+
+
+			var urlEndPoint = 'http://localhost:8045/subscribe?UserID='+UserID;
+			var eventSource = new EventSource(urlEndPoint);
+
+
+			// // addEventListener version
+			eventSource.addEventListener("latestNews",function(event){
+
+				var articleData = JSON.parse(event.data);
+				addBlock(articleData.title, articleData.text);
+			})
+		})
+
+		// eventSource.addEventListener('error',function(event){
+		// 	console.log("Error : "+ event.currentTarget.readyState);
+		// 	if(event.currentTarget.readyState == EventSource.CLOSED){
+
+		// 	}else{
+		// 		eventSource.close()
+		// 	}
+		// })
+
+		// window.onbeforeunload = function(){
+		// 	eventSource.close();
+		// }
+
+		function addBlock(title,text) {
+			var a = document.createElement("article");
+			//Title
+			var h= document.createElement("H3");
+			var t= document.createTextNode(title);
+			h.appendChild(t);
+
+			//Paragraph
+			var para = document.createElement("P");
+			para.innerHTML = text;
+
+			a.appendChild(h);
+			a.appendChild(para);
+			document.getElementById("pack").appendChild(a);
+		}
+
+	</script>
+
+	<body>
+		<nav class="navbar navbar-default">
+			<div class="container-fluid">
+				<div class="navbar-header">
+					<div class="navbar-brand">Latest News Here...</div>
+				</div>
+			</div>
+		</nav>
+
+		<div class="container pstyle text-center" id="pack">
+			<div class="panel panel-primary">
+				<h4>News TimeLine for User : <span id="userspan" class="spanStyle"></span> </h4>
+			</div>
+		</div>
+	</body>
+
+</html>
+
