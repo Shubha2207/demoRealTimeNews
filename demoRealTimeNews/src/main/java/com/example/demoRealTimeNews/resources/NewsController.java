@@ -1,15 +1,15 @@
 package com.example.demoRealTimeNews.resources;
 
 
-import com.fasterxml.jackson.databind.util.JSONPObject;
-import org.apache.tomcat.util.http.parser.MediaType;
+import com.example.demoRealTimeNews.models.Event;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.awt.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,22 +18,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RestController
 public class NewsController {
 
-    //public List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+    public List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
-    public Map<String, SseEmitter> emitters = new HashMap<>();
+
+
+    //public Map<String, SseEmitter> emitters = new HashMap<>();
 
 
     //method for subscription
     @CrossOrigin
     @RequestMapping(value = "/subscribe")
-    public SseEmitter subscribe(@RequestParam String UserID) {
+    public SseEmitter subscribe()  {
 
         SseEmitter sseEmitter = new SseEmitter(Long.MAX_VALUE);
 
         sendInitEvent(sseEmitter);
 
-        //emitters.add(sseEmitter);
-        emitters.put(UserID,sseEmitter);
+        emitters.add(sseEmitter);
+        //emitters.put(UserID,sseEmitter);
+
 
         sseEmitter.onCompletion(()->emitters.remove(sseEmitter));
         sseEmitter.onTimeout(()->emitters.remove(sseEmitter));
@@ -51,34 +54,47 @@ public class NewsController {
     }
 
 
+
+
     //method for dispatching events to all clients
     //to specific user
-    @PostMapping(value = "/dispatchEvent")
-    public void dispatchEventToSpecificClient(@RequestParam String title,@RequestParam String text, @RequestParam String UserID) throws JSONException {
+    @PostMapping(value = "/dispatchEvent", consumes = "application/json", produces = "application/json")
+    public void dispatchEventToAllClients(@RequestBody String eventString) throws JSONException, InterruptedException {
 
-        String eventFormatted = new JSONObject()
-                .put("title",title)
-                .put("text",text).toString();
+        JSONObject root = new JSONObject(eventString);
 
-        SseEmitter sseEmitter = emitters.get(UserID);
-        if(sseEmitter != null){
-            try{
-                sseEmitter.send(SseEmitter.event().name("latestNews").data(eventFormatted));
-            }catch (IOException e){
-                emitters.remove(sseEmitter);
-                //e.printStackTrace();
-            }
+        List<Map<String,String>> list = new ArrayList<>();
+        Map<String,String> map = new HashMap<>();
+        String headerValue="", bodyValue="";
 
+        Event eventObj = new Event();
+        eventObj.setEventName(root.get("EventName").toString());
+
+        JSONArray plants = root.getJSONArray("EventData");
+
+        System.out.println(plants);
+
+        for(int i=0;i<plants.length();i++){
+            JSONObject jsonplant = plants.getJSONObject(i);
+            headerValue = jsonplant.getString("headerValue");
+            bodyValue = jsonplant.getString("bodyValue");
+
+            map.put("headerValue",headerValue);
+            map.put("bodyValue",bodyValue);
+
+            list.add(map);
         }
 
-//        for( SseEmitter emitter : emitters){
-//            try{
-//                emitter.send(SseEmitter.event().name("latestNews").data(eventFormatted));
-//            }catch (IOException e){
-//                emitters.remove(emitter);
-//                //e.printStackTrace();
-//            }
-//        }
+        eventObj.setEventData(list);
+
+        for( SseEmitter emitter : emitters){
+            try{
+                emitter.send(SseEmitter.event().name(eventObj.getEventName()).data(eventObj.getEventData()));
+            }catch (IOException e){
+                emitters.remove(emitter);
+                //e.printStackTrace();
+            }
+        }
 
     }
 
